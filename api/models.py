@@ -1,0 +1,73 @@
+from django.db import models
+from django.db.models.query_utils import check_rel_lookup_compatibility
+
+class Team(models.Model):
+	games = models.ManyToManyField(
+		'Game',
+		through='GameTeam'
+	)
+	api_id = models.IntegerField()
+	name = models.CharField(max_length=50)
+	abbreviation = models.CharField(max_length = 3)
+	city = models.CharField(max_length = 20)
+	division = models.CharField(max_length = 20)
+	conference = models.CharField(max_length = 20)
+	website = models.URLField()
+
+	def __str__(self):
+		return f"{self.city} {self.name}"
+
+class Game(models.Model):
+	api_id = models.IntegerField()
+	datetime = models.DateTimeField()
+	game_type = models.CharField(max_length = 4)
+	season = models.CharField(max_length = 10)
+	status = models.CharField(max_length = 10)
+
+
+class GameTeam(models.Model):
+	game = models.ForeignKey(
+		Game,
+		on_delete=models.CASCADE
+	)
+	team = models.ForeignKey(
+		Team,
+		on_delete=models.CASCADE
+	)
+	home_away = models.CharField(max_length = 4)
+
+class Player(models.Model):
+	games = models.ManyToManyField(
+		Game,
+		through='GamePlayer'
+	)
+	api_id = models.IntegerField()
+	name = models.CharField(max_length = 50)
+
+class GamePlayer(models.Model):
+	game = models.ForeignKey(
+		Game,
+		on_delete=models.CASCADE
+	)
+	player = models.ForeignKey(
+		Player,
+		on_delete=models.CASCADE
+	)
+	position = models.CharField(max_length = 1)
+	jersey_num = models.IntegerField()
+
+
+class Goal(models.Model):
+	assist_players = models.ManyToManyField
+	game = models.ForeignKey(Game, on_delete=models.CASCADE)
+	player = models.ForeignKey(Player, on_delete=models.CASCADE)
+	team = models.ForeignKey(Team, on_delete=models.CASCADE)
+	api_id = models.IntegerField()
+	time = models.CharField(max_length = 5)
+	period = models.CharField(max_length = 4)
+	video_id = models.IntegerField()
+	video_url = models.URLField()
+
+class Assist(models.Model):
+	goal = models.ForeignKey(Goal, on_delete=models.CASCADE)
+	player = models.ForeignKey(Player, on_delete=models.CASCADE)
