@@ -1,0 +1,1 @@
+# Django 'copy' of fantasy hockey project for refamiliarizing myself with Django
