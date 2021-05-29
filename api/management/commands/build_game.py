@@ -5,6 +5,7 @@ from django.utils.dateparse import parse_datetime
 from django.db import DatabaseError, transaction
 
 BASE_URL = 'https://statsapi.web.nhl.com/api/v1/game'
+HEADERS = {'Content-type': 'application/json'}
 
 # f"{BASE_URL}/{game.api_id}/feed/live
 # f"{BASE_URL}/{game.api_id}/content
@@ -33,16 +34,19 @@ def build_game(game):
                 new_game.home_team = home_team
                 new_game.away_team = away_team
 
-                build_game_rosters_and_events(new_game)
-
         except DatabaseError:
+            new_game = None
             print(f"game not created {home_team} {away_team} {game['gameDate']}")
 
+        if new_game:
+            if created:
+                print(f"Game Created - {new_game}")
+            build_game_rosters_and_events(new_game)
         
 
 def build_game_rosters_and_events(game):
     url = f"{BASE_URL}/{game.api_id}/feed/live"
-    response = requests.get(url, headers={'Content-type': 'application/json'})
+    response = requests.get(url, headers=HEADERS)
     game_dict = response.json()
 
     build_roster(game, game.home_team, game_dict['liveData']['boxscore']['teams']['home'])
@@ -51,10 +55,6 @@ def build_game_rosters_and_events(game):
     build_events(game, game_dict['liveData']['plays'])
 
     add_game_videos(game)
-
-
-
-
 
 
 def build_roster(game, team, players_dict):
@@ -70,31 +70,39 @@ def build_player(game, team, player_dict):
                     'name': player_dict['person']['fullName']
                 }
             )
-            build_game_player(game, team, player, player_dict)
 
         except DatabaseError:
+            player = None
             print(f"Player not created - {player_dict['person']['fullname']}")
 
+        if player:
+            if created:
+                print(f"Player Created - {player}")
+            build_game_player(game, team, player, player_dict)
 
 def build_game_player(game, team, player, player_dict):
     try:
-        gp, created = GamePlayer.objects.get_or_create(
-            game = game,
-            player = player,
-            defaults = {
-                'position': player_dict['position']['abbreviation'],
-                'jersey_num': int(player_dict['jerseyNumber'])
-            }
-        )
-        gp.team = team
-        gp.save()
+        with transaction.atomic():
+            jerseyNum = player_dict.get('jerseyNumber')
+            gp, created = GamePlayer.objects.get_or_create(
+                game = game,
+                player = player,
+                defaults = {
+                    'position': player_dict['position']['abbreviation'],
+                    'jersey_num': int(jerseyNum) if jerseyNum else None
+                }
+            )
+            gp.team = team
+            gp.save()
 
     except DatabaseError as e:
         print(f"GamePlayer not created - {game} / {player} {e}")
 
+    else:
+        if created:
+            print(f"GamePlayer Created - {gp}")
 
 def build_events(game, plays_dict):
-    print(plays_dict['scoringPlays'])
     for goal_id in plays_dict['scoringPlays']:
         build_goal(game, plays_dict['allPlays'][goal_id])
 
@@ -113,26 +121,34 @@ def build_goal(game, goal_dict):
             }
         )
 
+    except DatabaseError as e:
+        goal = None
+        print(f"Goal {goal_dict['about']['eventIdx']} not created - {e}")
+
+    if goal:
+        if created:
+            print(f"Goal Created - {goal}")
         for player in goal_dict['players']:
             if player['playerType'] == 'Assist':
                 build_assist(goal, player['player']['id'])
 
-    except DatabaseError as e:
-        print(f"Goal {goal_dict['about']['eventIdx']} not created - {e}")
-
 def build_assist(goal, player_api_id):
     try:
-        Assist.objects.get_or_create(
+        assist, created = Assist.objects.get_or_create(
             goal = goal,
             player = Player.objects.get(api_id = player_api_id)
         )
     
     except DatabaseError as e:
         print(f"Assist not created {e}")
+    
+    else:
+        if created:
+            print(f"Created Assist - {assist}")
 
 def add_game_videos(game):
     url = f"{BASE_URL}/{game.api_id}/content"
-    response = requests.get(url, headers={'Content-type': 'application/json'})
+    response = requests.get(url, headers=HEADERS)
     game_content_dict = response.json()
 
     event_codes = game.goals.values_list('video_id', flat=True)
@@ -141,7 +157,7 @@ def add_game_videos(game):
         goals_dict = list(filter(lambda item : item['type'] == 'GOAL',
         game_content_dict['media']['milestones']['items']))
         for possible_goal in goals_dict:
-            if int(possible_goal['statsEventId']) in event_codes:
+            if possible_goal['statsEventId'] and int(possible_goal['statsEventId']) in event_codes:
                 video = next((x for x in possible_goal['highlight']['playbacks'] if x['name'].startswith('FLASH_1800K')), False)
 
                 if video:

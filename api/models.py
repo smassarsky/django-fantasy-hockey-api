@@ -16,11 +16,13 @@ class Team(models.Model):
 class Game(models.Model):
 	_teams = models.ManyToManyField(
 		Team,
-		through='GameTeam'
+		through='GameTeam',
+		related_name='games'
 	)
 	players = models.ManyToManyField(
 		'Player',
-		through='GamePlayer'
+		through='GamePlayer',
+		related_name='games'
 	)
 	api_id = models.IntegerField()
 	datetime = models.DateTimeField()
