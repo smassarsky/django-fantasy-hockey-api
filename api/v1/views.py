@@ -1,11 +1,19 @@
-from django.db.models import query
-from django.shortcuts import render
-from django.http import HttpResponse
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import IsAuthenticated
 
 from .models import Team, Game, Player, Goal, Assist
-from .serializers import TeamSerializer, GameSerializer, PlayerSerializer, GoalSerializer, AssistSerializer
+from .serializers import ListGameSerializer, RetrieveGameSerializer, TeamSerializer, PlayerSerializer, GoalSerializer, AssistSerializer
+from .pagination import SmallLimitOffsetPagination
+from .utils import get_score_from_game
+
+# https://stackoverflow.com/questions/22616973/django-rest-framework-use-different-serializers-in-the-same-modelviewset
+class ReadOnlyMultiSerializerViewSet(ReadOnlyModelViewSet):
+	serializers = {
+		'default': None,
+	}
+
+	def get_serializer_class(self):
+		return self.serializers.get(self.action, self.serializers['default'])
 
 
 class TeamViewSet(ReadOnlyModelViewSet):
@@ -13,10 +21,16 @@ class TeamViewSet(ReadOnlyModelViewSet):
 	serializer_class = TeamSerializer
 	permission_classes = []
 
-class GameViewSet(ReadOnlyModelViewSet):
+class GameViewSet(ReadOnlyMultiSerializerViewSet):
 	queryset = Game.objects.all()
-	serializer_class = GameSerializer
 	permission_classes = []
+	pagination_class = SmallLimitOffsetPagination
+	serializers = {
+		'list': ListGameSerializer,
+		'retrieve': RetrieveGameSerializer,
+		'default': ListGameSerializer
+	}
+
 
 class PlayerViewSet(ReadOnlyModelViewSet):
 	queryset = Player.objects.all()

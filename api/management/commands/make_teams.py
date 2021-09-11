@@ -1,6 +1,6 @@
 import requests
 from django.core.management.base import BaseCommand
-from api.models import Team
+from api.v1.models import Team
 
 def fetch_teams():
 	url = 'https://statsapi.web.nhl.com/api/v1/teams'
@@ -10,7 +10,6 @@ def fetch_teams():
 		build_team(team)
 
 def build_team(team):
-	print(team)
 	Team.objects.get_or_create(
 		api_id = team['id'],
 		defaults={

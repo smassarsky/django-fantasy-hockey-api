@@ -1,6 +1,6 @@
 from django.db.utils import Error
 import requests
-from api.models import Team, Game, Player, GameTeam, GamePlayer, Goal, Assist
+from api.v1.models import Team, Game, Player, GameTeam, GamePlayer, Goal, Assist
 from django.utils.dateparse import parse_datetime
 from django.db import DatabaseError, transaction
 
@@ -87,13 +87,12 @@ def build_game_player(game, team, player, player_dict):
             gp, created = GamePlayer.objects.get_or_create(
                 game = game,
                 player = player,
+                team = team,
                 defaults = {
                     'position': player_dict['position']['abbreviation'],
                     'jersey_num': int(jerseyNum) if jerseyNum else None
                 }
             )
-            gp.team = team
-            gp.save()
 
     except DatabaseError as e:
         print(f"GamePlayer not created - {game} / {player} {e}")

@@ -76,6 +76,10 @@ class GameTeam(models.Model):
 	)
 	home_away = models.CharField(max_length = 4)
 
+	def get_roster(self):
+		print(self)
+		return self.game.game_players.filter(team=self.team)
+
 class Player(models.Model):
 	api_id = models.IntegerField()
 	name = models.CharField(max_length = 50)
@@ -86,10 +90,15 @@ class Player(models.Model):
 class GamePlayer(models.Model):
 	game = models.ForeignKey(
 		Game,
-		on_delete=models.CASCADE
+		on_delete=models.CASCADE,
+		related_name='game_players'
 	)
 	player = models.ForeignKey(
 		Player,
+		on_delete=models.CASCADE
+	)
+	team = models.ForeignKey(
+		Team,
 		on_delete=models.CASCADE
 	)
 	position = models.CharField(max_length = 3)
@@ -108,5 +117,5 @@ class Goal(models.Model):
 	video_url = models.URLField()
 
 class Assist(models.Model):
-	goal = models.ForeignKey(Goal, on_delete=models.CASCADE)
-	player = models.ForeignKey(Player, on_delete=models.CASCADE)
+	goal = models.ForeignKey(Goal, on_delete=models.CASCADE, related_name='assists')
+	player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='assists')
