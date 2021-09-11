@@ -9,7 +9,7 @@ Eventually will allow users to create a matchup with friends where they can pick
 
 Create virtual environment in application root directory.  Activate environtment.  Install packages:
 
-```bash
+```
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
