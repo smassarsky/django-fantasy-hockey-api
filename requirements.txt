@@ -1,0 +1,8 @@
+Django~=3.2.3
+django-environ
+djangorestframework
+markdown
+django-filter
+psycopg2
+requests
+djangorestframework_simplejwt
