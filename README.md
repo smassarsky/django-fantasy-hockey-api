@@ -1,11 +1,11 @@
-### Django / DRF API for Fantasy Hockey application
+## Django / DRF API for Fantasy Hockey application
 
 Pulls team and game data from the NHL's stats API
 
 Eventually will allow users to create a matchup with friends where they can pick players from a team over the course of the matchup.  The user with the most points at the end of the matchup wins.
 
 
-##### Instructions
+#### Instructions
 
 Create virtual environment in application root directory.  Activate environtment.  Install packages:
 
@@ -30,4 +30,5 @@ Pull game data from NHL API:
 OR
 
 Y=Year1, Z=Year2
+
 `python manage.py make_games_by_season --season YYYYZZZZ`
